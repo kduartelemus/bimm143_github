@@ -1,0 +1,336 @@
+---
+title: "Class 8: PCA Mini Project"
+author: "Keilyn Duarte (PID A16881868)"
+format: pdf
+---
+
+Today we will do a complete analysis of some breast cancer biopsy data. But first, let's revisit the main PCA function in R `prcomp()` and see what `scale=TRUE/FALSE` does.
+
+```{r}
+head(mtcars)
+```
+
+Find the mean value per column of this dataset.
+
+```{r}
+apply(mtcars, 2, mean)
+```
+
+Find the standard deviation per column of this data set.
+
+```{r}
+apply(mtcars, 2, sd)
+```
+
+
+It is clear "disp" and "hp" have the highest mean values and standard deviation. They will likely dominate any analysis I do on this dataset. Let's see:
+
+```{r}
+pc.noscale <- prcomp(mtcars, scale = F)
+pc.scale <- prcomp(mtcars, scale = T)
+```
+
+```{r}
+# Bi plot of mtcars dataset with no scaling
+biplot(pc.noscale)
+```
+
+```{r}
+# How much each column contributes to the car's position on the plot PC1 vs. PC2
+pc.noscale$rotation[ ,1]
+```
+
+Plot the loadings
+
+```{r}
+library(ggplot2)
+
+r1 <- as.data.frame(pc.noscale$rotation)
+r1$names <- rownames(pc.noscale$rotation)
+
+ggplot(r1) +
+  aes(PC1, names) +
+  geom_col()
+```
+
+
+```{r}
+# ggplot with scaling, gives a fairer distribution 
+r2 <- as.data.frame(pc.scale$rotation)
+r2$names <- rownames(pc.scale$rotation)
+
+ggplot(r2) +
+  aes(PC1, names) +
+  geom_col()
+
+```
+
+```{r}
+# Bi plot of mtcars with scaling makes it easier to see patterns and similarities in the cars = better analysis !
+biplot(pc.scale)
+```
+
+> **Take-home**: Generally, we always want to set `scale=TRUE` when we do this type of analysis to avoid our analysis being dominated by individual variables with the largest variance, just due to their unit of measurement.
+
+# FNA Breast Cancer Data
+
+Load the data into R.
+
+```{r}
+wisc.df <- read.csv("WisconsinCancer.csv", row.names = 1)
+head(wisc.df)
+```
+
+> Q1. How many observations are in this dataset?
+
+```{r}
+nrow(wisc.df)
+```
+
+> Q2. How many of the observations have a malignant diagnosis?
+
+```{r}
+sum(wisc.df$diagnosis == "M")
+```
+
+The `table()` function is useful here as well.
+
+```{r}
+table(wisc.df$diagnosis)
+```
+
+> Q3. How many variables/features in the data are suffixed with _mean?
+
+```{r}
+ncol(wisc.df)
+colnames(wisc.df)
+```
+
+A useful function for this is `grep()`
+
+```{r}
+length( grep("_mean" , colnames(wisc.df)) )
+```
+
+Before going any further, we need to exclude the diagnoses column for any future analysis - this tells us whether a sample is cancer or non-cancer.
+
+```{r}
+diagnosis <- as.factor(wisc.df$diagnosis)
+head(diagnosis)
+```
+
+```{r}
+wisc.data <- wisc.df[ ,-1]
+```
+
+Let's see if we can cluster the `wisc.data` to find some structure in the dataset.
+
+```{r}
+# The cluster dendrogram for this data is very messy
+hc <- hclust( dist(wisc.data))
+plot(hc)
+```
+
+# Principal Component Anaylsis (PCA)
+
+```{r}
+wisc.pr <- prcomp (wisc.data, scale = T)
+summary(wisc.pr)
+```
+
+> Q4. From your results, what proportion of the original variance is captured by the first principal components (PC1)?
+
+Based on the summary, PC1 captures 44% of the original variance.
+
+> Q5. How many principal components (PCs) are required to describe at least 70% of the original variance in the data?
+
+The cumulative proportion shows that up to PC3 is required to describe at least 70% of the original variance.
+
+> Q6. How many principal components (PCs) are required to describe at least 90% of the original variance in the data?
+
+The cumulative proportion shows that up to PC6 is required to describe at least 90% of the original variance.
+
+```{r}
+biplot(wisc.pr)
+```
+
+> Q7. What stands out to you about this plot? Is it easy or difficult to understand? Why?
+
+It is really difficult to understand because it is difficult to see trends when there is a big mess on the plot.
+
+This biplot sucks ! We need to build our own PCA score plot of PC1 vs. PC2
+
+```{r}
+head(wisc.pr$x)
+```
+
+Plot of PC1 vs. PC2, the first two columns
+
+```{r}
+plot(wisc.pr$x[,1], wisc.pr$x[,2], col=diagnosis,
+     xlab = "PC1", ylab = "PC2")
+```
+
+> Q8. Generate a similar plot for principal components 1 and 3. What do you notice about these plots?
+
+```{r}
+plot(wisc.pr$x[,1], wisc.pr$x[,3], col=diagnosis,
+     xlab = "PC1", ylab = "PC3")
+```
+
+The separation between the two groups are not as clean as the plot vs. PC2, since PC3 represents much less variance in the data. There is some overlap with the red and black points. 
+
+Make a ggplot version of this score plot
+
+```{r}
+pc <- as.data.frame(wisc.pr$x)
+
+ggplot(pc) +
+  aes(PC1, PC2, col = diagnosis) +
+  geom_point()
+```
+
+## Variance
+
+```{r}
+pr.var <- wisc.pr$sdev^2
+head(pr.var)
+```
+
+```{r}
+# Variance explained by each principal component: pve
+pve <- pr.var / sum(pr.var)
+
+# Plot variance explained for each principal component
+plot(pve, xlab = "Principal Component", 
+     ylab = "Proportion of Variance Explained", 
+     ylim = c(0, 1), type = "o")
+```
+
+```{r}
+barplot(pve, ylab = "Precent of Variance Explained",
+     names.arg=paste0("PC",1:length(pve)), las=2, axes = FALSE)
+axis(2, at=pve, labels=round(pve,2)*100 )
+```
+
+
+> Q9. For the first principal component, what is the component of the loading vector (i.e. wisc.pr$rotation[,1]) for the feature concave.points_mean?
+
+```{r}
+wisc.pr$rotation["concave.points_mean", 1]
+```
+
+> Q10. What is the minimum number of principal components required to explain 80% of the variance of the data?
+
+```{r}
+summary(wisc.pr)
+```
+
+Based on the cumulative proportion, up to PC5 represents at least 80% of the data's variance.
+
+## Hierarchical clustering
+
+```{r}
+data.scaled <- scale(wisc.data)
+data.dist <- dist(data.scaled)
+wisc.hclust <- hclust(data.dist, method = "complete")
+```
+
+> Q11. Using the plot() and abline() functions, what is the height at which the clustering model has 4 clusters?
+
+```{r}
+plot(wisc.hclust)
+abline(h=19, col="red", lty=2)
+```
+
+## Selecting number of clusters
+
+```{r}
+wisc.hclust.clusters <- cutree(wisc.hclust, h=19)
+# Compare the cluster membership to the actual diagnoses.
+table(wisc.hclust.clusters, diagnosis)
+```
+
+> Q12. Can you find a better cluster vs diagnoses match by cutting into a different number of clusters between 2 and 10?
+
+```{r}
+table(cutree(wisc.hclust, h=4), diagnosis)
+```
+
+Cutting at around h=4 creates a better separation. The goal is to have smaller clusters where most of the samples are of one type, with minimal amounts of the other type.
+
+> Q13. Which method gives your favorite results for the same data.dist dataset? Explain your reasoning.
+
+`ward.D2` clustering seems to give the cleanest cutoff on the dendrogram.
+
+```{r}
+complete <- hclust(data.dist, method = "complete")
+single <- hclust(data.dist, method = "single")
+average <- hclust(data.dist, method = "average")
+ward.D2 <- hclust(data.dist, method = "ward.D2")
+
+plot(complete)
+plot(single)
+plot(average)
+plot(ward.D2)
+```
+
+## Clustering in PC space
+
+```{r}
+hc <- hclust(dist(wisc.pr$x[ ,1:2]), method = "ward.D2")
+
+plot(hc)
+abline(h = 70, col = "red")
+```
+
+Cluster membership vector
+
+```{r}
+grps <- cutree(hc, h=70)
+```
+
+```{r}
+table(diagnosis)
+```
+
+Cross-table to see how my clustering groups correspond to the expert diagnosis vector of M and B values
+
+```{r}
+table(grps, diagnosis)
+```
+
+Positive => Cancer M
+Negative => Non-cancer B
+
+True = Cluster 1
+False = Cluster 2
+
+True positive 177
+False positive 18
+True negative 339
+False negative 35
+
+> Q17. Which of your analysis procedures resulted in a clustering model with the best specificity? How about sensitivity?
+
+I think that the hierarchical clustering with the ward.D2 method gave best sensitivity and the PCA gave best specitivity.
+
+We can use our PCA results `wisc.pr` to make predictions on new unseen data.
+
+```{r}
+#url <- "new_samples.csv"
+url <- "https://tinyurl.com/new-samples-CSV"
+new <- read.csv(url)
+npc <- predict(wisc.pr, newdata=new)
+npc
+```
+
+```{r}
+plot(wisc.pr$x[,1:2], col=grps)
+points(npc[,1], npc[,2], col="blue", pch=16, cex=3)
+text(npc[,1], npc[,2], c(1,2), col="white")
+```
+
+> Q18. Which of these new patients should we prioritize for follow up based on your results?
+
+Patient 2, because their sample is similar to previous malignant samples colored red.
