@@ -1,0 +1,93 @@
+---
+title: "Lab 17: AWS PCA"
+author: "Keilyn Duarte (A16881868)"
+format: pdf
+---
+
+Let's make a PCA plot of the four quant files we got from our AWS server. We need to download the `tximport` and `rhdf5` package from BiocManager first with `BiocManager::install("")`.
+
+```{r}
+library(tximport)
+
+# setup the folder and filenames to read
+folders <- dir(pattern="SRR21568*")
+samples <- sub("_quant", "", folders)
+files <- file.path( folders, "abundance.h5" )
+names(files) <- samples
+
+txi.kallisto <- tximport(files, type = "kallisto", txOut = TRUE)
+
+
+```
+
+Taking a look at **txi.kallisto**
+```{r}
+head(txi.kallisto$counts)
+```
+
+Check how many transcripts we have in our samples and how many are detected in at least one sample.
+```{r}
+colSums(txi.kallisto$counts)
+
+sum(rowSums(txi.kallisto$counts)>0)
+```
+
+
+```{r}
+to.keep <- rowSums(txi.kallisto$counts) > 0
+kset.nonzero <- txi.kallisto$counts[to.keep,]
+```
+
+```{r}
+keep2 <- apply(kset.nonzero,1,sd)>0
+x <- kset.nonzero[keep2,]
+```
+
+Now let's start the PCA.
+
+```{r}
+pca <- prcomp(t(x), scale=TRUE)
+
+summary(pca)
+```
+PC1 vs. PC2 plot:
+
+```{r}
+library(ggplot2)
+library(ggrepel)
+
+# Make metadata object for the samples
+colData <- data.frame(condition = factor(rep(c("control", "treatment"), each = 2)))
+rownames(colData) <- colnames(txi.kallisto$counts)
+
+# Make the data.frame for ggplot 
+y <- as.data.frame(pca$x)
+y$Condition <- as.factor(colData$condition)
+
+ggplot(y) +
+  aes(PC1, PC2, col=Condition) +
+  geom_point() +
+  geom_text_repel(label=rownames(y)) +
+  theme_bw()
+```
+
+PC1 vs PC3 plot:
+
+```{r}
+ggplot(y) +
+  aes(PC1, PC3, col=Condition) +
+  geom_point() +
+  geom_text_repel(label=rownames(y)) +
+  theme_bw()
+```
+
+PC2 vs PC3 plot:
+
+```{r}
+ggplot(y) +
+  aes(PC2, PC3, col=Condition) +
+  geom_point() +
+  geom_text_repel(label=rownames(y)) +
+  theme_bw()
+```
+
