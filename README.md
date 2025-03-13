@@ -4,7 +4,7 @@ My classwork from W25 [BIMM143](https://github.com/kduartelemus/bimm143_github.g
 
 - Class04 [Introduction to R](https://github.com/kduartelemus/bimm143_github/blob/main/Class04/Class04.pdf)
 
-- Class05 [Data viz with ggplot](https://github.com/kduartelemus/bimm143_github/blob/main/Class05/Class05.pdf)
+- Class05 [Data viz with ggplot](https://htmlpreview.github.io/?https://raw.githubusercontent.com/kduartelemus/bimm143_github/refs/heads/main/Class05/Class05.html)
 
 - Class06 [R functions](https://github.com/kduartelemus/bimm143_github/blob/main/Class06/Class06.pdf)
 
