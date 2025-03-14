@@ -1,0 +1,54 @@
+---
+title: "Lab 19: Cancer Mutation Mini-project"
+author: Keilyn Duarte Lemus (A16881868)
+format: html
+---
+
+```{r}
+library(bio3d)
+sequence <- read.fasta("A16881868_mutant_seq.fa")
+score <- conserv(sequence)
+positions <- which(score !=1)
+residues <- sequence$ali[, positions]
+paste(residues[,1],positions, residues[,2],sep="")
+```
+
+> Q1. [1pt] What protein do these sequences correspond to? (Give both full gene/protein name
+and oﬀicial symbol).
+
+Janus kinase 2 / JAK2
+
+> Q2. [6pts] What are the tumor specific mutations in this particular case ( e.g. A130V)?
+
+"G552K" "V650E" "G669K" "V770E"
+
+> Q3. [1pts] Do your mutations cluster to any particular domain and if so give the name and
+PFAM id of this domain? Alternately note whether your protein is single domain and provide
+it’s PFAM id/accession and name (e.g. PF00613 and PI3Ka).
+
+My mutations cluster to the upstream “Protein tyrosine and serine/threonine kinase domain (545 - 805), PF07714. There were two of these domains identified, hence the upstream clarification.
+
+> Q4. [2pts] Using the NCI-GDC list the observed top 2 missense mutations in this protein
+(amino acid substitutions)?
+
+R683G and T875N are the top 2 missense mutations of JAK2.
+
+> Q5. [2pts] What two TCGA projects have the most cases affected by mutations of this
+gene? (Give the TCGA “code” and “Project Name” for example “TCGA-BRCA” and “Breast
+Invasive Carcinoma”).
+
+TCGA-UCEC, Uterine Corpus Endometrial Carcinoma - 8.01%
+TCGA-STAD, Stomach Adenocarcinoma - 4.55%
+
+> Q6. [3pts] List one RCSB PDB identifier with 100% identity to the wt_healthy sequence
+and detail the percent coverage of your query sequence for this known structure? Alternately,
+provide the most similar in sequence PDB structure along with it’s percent identity, coverage
+and E-value. Does this structure “cover” (i.e. include or span the amino acid residue positions)
+of your previously identified tumor specific mutations?
+
+PDB ID: 6E2P
+Percent Identity: 100%, E-value: 4.943e-318, Coverage: 42% (478/1132)
+This PDB result matches wt_healthy residues 3-481. I could not find a match that covered the region with my tumor-specific mutations. 
+
+
+
